@@ -3,13 +3,15 @@ import os
 
 pygame.init()
 
+# Window control
 WIDTH = 1200
 HEIGHT = 600
 WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
 BACKGROUND = pygame.transform.scale(pygame.image.load(os.path.join("Stuff", "Background.png")), (WIDTH, HEIGHT))
 FPS = 60
 
-JUMP_HEIGHT = 50
+# Player settings
+JUMP_HEIGHT = 70
 JUMP_SLOW = 30
 GRAVITY = 5
 HITBOX_WIDTH, HITBOX_HEIGHT = 20, 70
@@ -20,10 +22,24 @@ FRICTION = 0.1
 X = WIDTH // 2
 Y = HEIGHT - HITBOX_HEIGHT
 HITBOX = pygame.Rect(X, Y, HITBOX_WIDTH, HITBOX_HEIGHT)
+JUMP_SOUND = pygame.mixer.Sound("Stuff/Jump_sound.mp3")
 
+#Platfrom settings
+PLATFORM_HEIGHT = 60
+PLATFORM_WIDTH = 200
+PLATFORM = pygame.transform.scale(pygame.image.load(os.path.join("Stuff", "Platform.png.png")), (PLATFORM_WIDTH, PLATFORM_HEIGHT))
+
+platforms = []
 def draw():
+    platform_location_x = 100
+    platform_location_y = 550
     WINDOW.blit(BACKGROUND, (0, 0))
     pygame.draw.rect(WINDOW, (255, 0, 0), HITBOX)
+    for _ in range(10):
+        WINDOW.blit(PLATFORM, (platform_location_x, platform_location_y))
+        platforms.append([platform_location_x, platform_location_y])
+        platform_location_x += PLATFORM_WIDTH + 50
+        platform_location_y -= PLATFORM_HEIGHT
     pygame.display.update()
 
 def player_movements():
@@ -64,12 +80,12 @@ def player_jump():
         if HEIGHT - (JUMP_HEIGHT + HITBOX_HEIGHT + JUMP_SLOW) < HITBOX.y:
             HITBOX.y -= 3
             if HEIGHT - (JUMP_HEIGHT + HITBOX_HEIGHT) < HITBOX.y:
-                HITBOX.y -= 2
+                HITBOX.y -= 4
         else:
             decent = True
     if decent == True:
         if HITBOX.y < HEIGHT - HITBOX_HEIGHT:
-            HITBOX.y += 3
+            HITBOX.y += 5
         else:
             Jump = False
             decent = False
@@ -78,7 +94,8 @@ def player_jump():
 
 def gravity():
     if HITBOX.y < HEIGHT - HITBOX_HEIGHT:
-        HITBOX.y += GRAVITY
+         HITBOX.y += GRAVITY
+
 
 def main():
     global run, Jump, decent
@@ -90,8 +107,9 @@ def main():
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_w:
+                if event.key == pygame.K_w and Jump == False:
                     Jump = True
+                    JUMP_SOUND.play()
             if event.type == pygame.QUIT:
                 run = False
         if Jump == False:
