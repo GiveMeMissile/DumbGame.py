@@ -30,6 +30,7 @@ PLATFORM_WIDTH = 200
 PLATFORM = pygame.transform.scale(pygame.image.load(os.path.join("Stuff", "Platform.png.png")), (PLATFORM_WIDTH, PLATFORM_HEIGHT))
 
 platforms = []
+initial_height = HEIGHT
 def draw():
     platform_location_x = 100
     platform_location_y = 550
@@ -75,26 +76,40 @@ def player_movements():
     HITBOX.x = X
 
 def player_jump():
-    global decent, Jump
+    global decent, Jump, initial_height
     if decent == False:
-        if HEIGHT - (JUMP_HEIGHT + HITBOX_HEIGHT + JUMP_SLOW) < HITBOX.y:
+        if initial_height - (JUMP_HEIGHT + HITBOX_HEIGHT + JUMP_SLOW) < HITBOX.y:
             HITBOX.y -= 3
             if HEIGHT - (JUMP_HEIGHT + HITBOX_HEIGHT) < HITBOX.y:
                 HITBOX.y -= 4
         else:
             decent = True
     if decent == True:
-        if HITBOX.y < HEIGHT - HITBOX_HEIGHT:
-            HITBOX.y += 5
-        else:
+        HITBOX.y += GRAVITY
+        for platform_location_x, platform_location_y in platforms:
+            platform_rect = pygame.Rect(platform_location_x, platform_location_y, PLATFORM_WIDTH, PLATFORM_HEIGHT)
+            if HITBOX.colliderect(platform_rect) and HITBOX.bottom <= platform_rect.top + GRAVITY:
+                HITBOX.y = platform_rect.y - HITBOX_HEIGHT
+                Jump = False
+                decent = False
+                initial_height = HITBOX.y
+        if HITBOX.y + HITBOX_HEIGHT >= HEIGHT:
+            HITBOX.y = HEIGHT - HITBOX_HEIGHT
             Jump = False
             decent = False
+            initial_height = HEIGHT - HITBOX_HEIGHT
 
 
 
 def gravity():
-    if HITBOX.y < HEIGHT - HITBOX_HEIGHT:
-         HITBOX.y += GRAVITY
+    HITBOX.y += GRAVITY
+    for platform_location_x, platform_location_y in platforms:
+        platform_rect = pygame.Rect(platform_location_x, platform_location_y, PLATFORM_WIDTH, PLATFORM_HEIGHT)
+        if HITBOX.colliderect(platform_rect) and HITBOX.bottom <= platform_rect.top + GRAVITY:
+            HITBOX.y = platform_rect.y - HITBOX_HEIGHT
+            return
+    if HITBOX.y + HITBOX_HEIGHT >= HEIGHT:
+        HITBOX.y = HEIGHT - HITBOX_HEIGHT
 
 
 def main():
