@@ -24,13 +24,13 @@ Y = HEIGHT - HITBOX_HEIGHT
 HITBOX = pygame.Rect(X, Y, HITBOX_WIDTH, HITBOX_HEIGHT)
 JUMP_SOUND = pygame.mixer.Sound("Stuff/Jump_sound.mp3")
 
-#Platfrom settings
+# Platform settings
 PLATFORM_HEIGHT = 60
 PLATFORM_WIDTH = 200
 PLATFORM = pygame.transform.scale(pygame.image.load(os.path.join("Stuff", "Platform.png.png")), (PLATFORM_WIDTH, PLATFORM_HEIGHT))
 
 platforms = []
-initial_height = HEIGHT
+
 def draw():
     platform_location_x = 100
     platform_location_y = 550
@@ -76,15 +76,15 @@ def player_movements():
     HITBOX.x = X
 
 def player_jump():
-    global decent, Jump, initial_height
+    global decent, Jump, initial_height, falling
     if decent == False:
-        if initial_height - (JUMP_HEIGHT + HITBOX_HEIGHT + JUMP_SLOW) < HITBOX.y:
+        if HITBOX.y > initial_height - (JUMP_HEIGHT + HITBOX_HEIGHT + JUMP_SLOW):
             HITBOX.y -= 3
             if initial_height - (JUMP_HEIGHT + HITBOX_HEIGHT) < HITBOX.y:
                 HITBOX.y -= 4
         else:
             decent = True
-    if decent == True:
+    if decent:
         HITBOX.y += GRAVITY
         for platform_location_x, platform_location_y in platforms:
             platform_rect = pygame.Rect(platform_location_x, platform_location_y, PLATFORM_WIDTH, PLATFORM_HEIGHT)
@@ -93,6 +93,7 @@ def player_jump():
                 decent = False
                 Jump = False
                 initial_height = HITBOX.y
+                return
         if HITBOX.y + HITBOX_HEIGHT >= HEIGHT:
             HITBOX.y = HEIGHT - HITBOX_HEIGHT
             decent = False
@@ -102,6 +103,7 @@ def player_jump():
 def gravity():
     global initial_height, falling
     if Jump == False:
+        falling = True
         for platform_location_x, platform_location_y in platforms:
             platform_rect = pygame.Rect(platform_location_x, platform_location_y, PLATFORM_WIDTH, PLATFORM_HEIGHT)
             if HITBOX.colliderect(platform_rect) and HITBOX.bottom <= platform_rect.top + GRAVITY:
@@ -109,7 +111,8 @@ def gravity():
                 initial_height = HITBOX.y
                 falling = False
                 return
-        if HITBOX.y <= HEIGHT - HITBOX_HEIGHT:
+        if HITBOX.y + HITBOX_HEIGHT >= HEIGHT:
+            HITBOX.y = HEIGHT - HITBOX_HEIGHT
             initial_height = HEIGHT - HITBOX_HEIGHT
             falling = False
             return
@@ -118,26 +121,29 @@ def gravity():
 
 
 def main():
-    global run, Jump, decent, falling
+    global run, Jump, decent, falling, platforms, initial_height
     falling = True
     Jump = False
     decent = False
+    platforms = []
+    initial_height = HEIGHT - HITBOX_HEIGHT
     run = True
     clock = pygame.time.Clock()
     while run:
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_w and Jump == False:
+                if event.key == pygame.K_w and not Jump and not falling:
                     Jump = True
                     JUMP_SOUND.play()
             if event.type == pygame.QUIT:
                 run = False
-        falling = True
-        gravity()
-        if falling == False:
+        if not Jump:
+            gravity()
+        else:
             player_jump()
         player_movements()
         draw()
     pygame.quit()
+
 main()
