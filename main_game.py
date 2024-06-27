@@ -10,19 +10,27 @@ WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
 BACKGROUND = pygame.transform.scale(pygame.image.load(os.path.join("Stuff", "Background.png")), (WIDTH, HEIGHT))
 FPS = 60
 
+
+
 # Player settings
 JUMP_HEIGHT = 70
 JUMP_SLOW = 30
 GRAVITY = 7
 HITBOX_WIDTH, HITBOX_HEIGHT = 20, 70
+MAX_ATTACK = 100
 velocity = 0
 ACCELERATION = 0.5
 MAX_VELOCITY = 5
 FRICTION = 0.1
 X = WIDTH // 2
 Y = HEIGHT - HITBOX_HEIGHT
-HITBOX = pygame.Rect(X, Y, HITBOX_WIDTH, HITBOX_HEIGHT)
+
 JUMP_SOUND = pygame.mixer.Sound("Stuff/Jump_sound.mp3")
+ATTACK_SOUND = pygame.mixer.Sound("Stuff/Sword_Draw.mp3")
+
+HITBOX = pygame.Rect(X, Y, HITBOX_WIDTH, HITBOX_HEIGHT)
+PLAYER_IMAGE = pygame.transform.scale(pygame.image.load(os.path.join("Stuff", "Stickboy.png.png")), (HITBOX_WIDTH + 30, HITBOX_HEIGHT + 20))
+ATTACK_IMAGE = pygame.transform.scale(pygame.image.load(os.path.join("Stuff", "Attack_posistion.png")), (HITBOX_WIDTH + 90, HITBOX_HEIGHT + 20))
 
 # Platform settings
 PLATFORM_HEIGHT = 60
@@ -35,7 +43,10 @@ def draw():
     platform_location_x = 100
     platform_location_y = 550
     WINDOW.blit(BACKGROUND, (0, 0))
-    pygame.draw.rect(WINDOW, (255, 0, 0), HITBOX)
+    if attack == False:
+        WINDOW.blit(PLAYER_IMAGE, (HITBOX.x - 15, HITBOX.y - 10))
+    else:
+        WINDOW.blit(ATTACK_IMAGE, (HITBOX.x - 45, HITBOX.y - 10))
     for _ in range(10):
         WINDOW.blit(PLATFORM, (platform_location_x, platform_location_y))
         platforms.append([platform_location_x, platform_location_y])
@@ -74,6 +85,13 @@ def player_movements():
         velocity = 0
 
     HITBOX.x = X
+
+def player_attack():
+    global attack, attack_limit
+    if attack == True:
+        attack_limit += 5
+    if attack_limit >= MAX_ATTACK:
+        attack = False
 
 def player_jump():
     global decent, Jump, initial_height, falling
@@ -121,8 +139,9 @@ def gravity():
 
 
 def main():
-    global run, Jump, decent, falling, platforms, initial_height
+    global run, Jump, decent, falling, platforms, initial_height, attack, attack_limit
     falling = True
+    attack = False
     Jump = False
     decent = False
     platforms = []
@@ -136,8 +155,15 @@ def main():
                 if event.key == pygame.K_w and not Jump and not falling:
                     Jump = True
                     JUMP_SOUND.play()
+                if attack == False:
+                    if event.key == pygame.K_SPACE:
+                        attack = True
+                        attack_limit = 0
+                        ATTACK_SOUND.play()
             if event.type == pygame.QUIT:
                 run = False
+        if attack:
+            player_attack()
         if not Jump:
             gravity()
         else:
