@@ -37,6 +37,13 @@ PLATFORM_HEIGHT = 60
 PLATFORM_WIDTH = 200
 PLATFORM = pygame.transform.scale(pygame.image.load(os.path.join("Stuff", "Platform.png.png")), (PLATFORM_WIDTH, PLATFORM_HEIGHT))
 
+#Enemy settings
+ENEMY_RED_HITBOX_WIDTH, ENEMY_RED_HITBOX_HEIGHT = 40, 70
+
+ENEMY_RED_HITBOX = pygame.Rect(100, HEIGHT - ENEMY_RED_HITBOX_HEIGHT, ENEMY_RED_HITBOX_WIDTH, ENEMY_RED_HITBOX_HEIGHT)
+AMONG_RED_IMAGE = pygame.transform.scale(pygame.image.load(os.path.join("Stuff", "Among_red.png.png")), (ENEMY_RED_HITBOX_WIDTH, ENEMY_RED_HITBOX_HEIGHT))
+enemy_red_hitbox = pygame.Rect(100, HEIGHT - ENEMY_RED_HITBOX_HEIGHT, ENEMY_RED_HITBOX_WIDTH,
+                                   ENEMY_RED_HITBOX_HEIGHT)
 platforms = []
 
 def draw():
@@ -47,6 +54,7 @@ def draw():
         WINDOW.blit(PLAYER_IMAGE, (HITBOX.x - 15, HITBOX.y - 10))
     else:
         WINDOW.blit(ATTACK_IMAGE, (HITBOX.x - 45, HITBOX.y - 10))
+    WINDOW.blit(AMONG_RED_IMAGE, (ENEMY_RED_HITBOX.x, ENEMY_RED_HITBOX.y))
     for _ in range(10):
         WINDOW.blit(PLATFORM, (platform_location_x, platform_location_y))
         platforms.append([platform_location_x, platform_location_y])
@@ -87,11 +95,16 @@ def player_movements():
     HITBOX.x = X
 
 def player_attack():
-    global attack, attack_limit
+    global attack, attack_limit, attack_area
     if attack == True:
         attack_limit += 5
+        attack_area = pygame.Rect((HITBOX.x - 35, HITBOX.y), (90, 20))
+        attack_aura.append(attack_area)
     if attack_limit >= MAX_ATTACK:
+        for attack_area in attack_aura:
+            attack_aura.remove(attack_area)
         attack = False
+
 
 def player_jump():
     global decent, Jump, initial_height, falling
@@ -137,9 +150,17 @@ def gravity():
         HITBOX.y += GRAVITY
     falling = False
 
+def enemy_handler():
+    global enemy_red_hitbox
+    among_red_enemy.append(enemy_red_hitbox)
+    for enemy_red_hitbox in among_red_enemy:
+        if enemy_red_hitbox.colliderect(attack_area):
+            among_red_enemy.remove(enemy_red_hitbox)
 
 def main():
-    global run, Jump, decent, falling, platforms, initial_height, attack, attack_limit
+    global run, Jump, decent, falling, platforms, initial_height, attack, attack_limit, attack_aura, among_red_enemy
+    attack_aura = []
+    among_red_enemy = []
     falling = True
     attack = False
     Jump = False
@@ -168,6 +189,7 @@ def main():
             gravity()
         else:
             player_jump()
+
         player_movements()
         draw()
     pygame.quit()
