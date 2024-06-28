@@ -25,12 +25,18 @@ FRICTION = 0.1
 X = WIDTH // 2
 Y = HEIGHT - HITBOX_HEIGHT
 
-JUMP_SOUND = pygame.mixer.Sound("Stuff/Jump_sound.mp3")
-ATTACK_SOUND = pygame.mixer.Sound("Stuff/Sword_Draw.mp3")
 
 HITBOX = pygame.Rect(X, Y, HITBOX_WIDTH, HITBOX_HEIGHT)
 PLAYER_IMAGE = pygame.transform.scale(pygame.image.load(os.path.join("Stuff", "Stickboy.png.png")), (HITBOX_WIDTH + 30, HITBOX_HEIGHT + 20))
 ATTACK_IMAGE = pygame.transform.scale(pygame.image.load(os.path.join("Stuff", "Attack_posistion.png")), (HITBOX_WIDTH + 90, HITBOX_HEIGHT + 20))
+
+# Sounds
+JUMP_SOUND = pygame.mixer.Sound("Stuff/Jump_sound.mp3")
+ATTACK_SOUND = pygame.mixer.Sound("Stuff/Sword_Draw.mp3")
+HIT_SOUND = pygame.mixer.Sound("Stuff/Sword_hit.mp3")
+BACKGROUND_MUSIC = pygame.mixer.Sound("Stuff/Background_music.mp3")
+AMONG_RED_DEATH = pygame.mixer.Sound("Stuff/Among_us_death_sound.mp3")
+PLAYER_DEATH = pygame.mixer.Sound("Stuff/Player_death_sound.mp3")
 
 # Platform settings
 PLATFORM_HEIGHT = 60
@@ -39,27 +45,33 @@ PLATFORM = pygame.transform.scale(pygame.image.load(os.path.join("Stuff", "Platf
 
 #Enemy settings
 ENEMY_RED_HITBOX_WIDTH, ENEMY_RED_HITBOX_HEIGHT = 40, 70
+ENEMY_RED_MOVEMENT = 300
 
-ENEMY_RED_HITBOX = pygame.Rect(100, HEIGHT - ENEMY_RED_HITBOX_HEIGHT, ENEMY_RED_HITBOX_WIDTH, ENEMY_RED_HITBOX_HEIGHT)
+ENEMY_RED_HITBOX = pygame.Rect(700, HEIGHT - ENEMY_RED_HITBOX_HEIGHT, ENEMY_RED_HITBOX_WIDTH, ENEMY_RED_HITBOX_HEIGHT)
 AMONG_RED_IMAGE = pygame.transform.scale(pygame.image.load(os.path.join("Stuff", "Among_red.png.png")), (ENEMY_RED_HITBOX_WIDTH, ENEMY_RED_HITBOX_HEIGHT))
-enemy_red_hitbox = pygame.Rect(100, HEIGHT - ENEMY_RED_HITBOX_HEIGHT, ENEMY_RED_HITBOX_WIDTH,
+enemy_red_hitbox = pygame.Rect(700, HEIGHT - ENEMY_RED_HITBOX_HEIGHT, ENEMY_RED_HITBOX_WIDTH,
                                    ENEMY_RED_HITBOX_HEIGHT)
+AMONG_RED_FLIP = pygame.transform.flip(AMONG_RED_IMAGE, flip_y=False, flip_x=True)
+
 platforms = []
 
 def draw():
     platform_location_x = 100
-    platform_location_y = 550
+    platform_location_y = 500
     WINDOW.blit(BACKGROUND, (0, 0))
     if attack == False:
         WINDOW.blit(PLAYER_IMAGE, (HITBOX.x - 15, HITBOX.y - 10))
     else:
         WINDOW.blit(ATTACK_IMAGE, (HITBOX.x - 45, HITBOX.y - 10))
-    WINDOW.blit(AMONG_RED_IMAGE, (ENEMY_RED_HITBOX.x, ENEMY_RED_HITBOX.y))
-    for _ in range(10):
+    if red == True and right == True:
+        WINDOW.blit(AMONG_RED_IMAGE, (ENEMY_RED_HITBOX.x, ENEMY_RED_HITBOX.y))
+    elif red == True and right == False:
+        WINDOW.blit(AMONG_RED_FLIP, (ENEMY_RED_HITBOX.x, ENEMY_RED_HITBOX.y))
+    for _ in range(5):
         WINDOW.blit(PLATFORM, (platform_location_x, platform_location_y))
         platforms.append([platform_location_x, platform_location_y])
-        platform_location_x += PLATFORM_WIDTH + 50
-        platform_location_y -= PLATFORM_HEIGHT
+        platform_location_x += PLATFORM_WIDTH + 40
+        platform_location_y -= PLATFORM_HEIGHT + 50
     pygame.display.update()
 
 def player_movements():
@@ -151,17 +163,48 @@ def gravity():
     falling = False
 
 def enemy_handler():
-    global enemy_red_hitbox
+    global enemy_red_hitbox, red, right, useless, run, over
     among_red_enemy.append(enemy_red_hitbox)
     for enemy_red_hitbox in among_red_enemy:
-        if enemy_red_hitbox.colliderect(attack_area):
-            among_red_enemy.remove(enemy_red_hitbox)
+        for attack_area in attack_aura:
+            if enemy_red_hitbox.colliderect(attack_area) and red == True:
+                enemy_red_hitbox.y += 12345
+                among_red_enemy.remove(enemy_red_hitbox)
+                red = False
+                HIT_SOUND.play()
+        if enemy_red_hitbox.colliderect(HITBOX):
+            run = False
+            PLAYER_DEATH.play()
+            pygame.time.delay(3000)
+            over += 5
+            if over == 15:
+                pygame.quit()
+    if red == False:
+        useless += 5
+        if useless == 20:
+            AMONG_RED_DEATH.play()
+    if ENEMY_RED_MOVEMENT + 700 >= enemy_red_hitbox.x and right == True:
+        right = True
+        enemy_red_hitbox.x += 5
+        ENEMY_RED_HITBOX.x += 5
+    elif ENEMY_RED_MOVEMENT + 700 <= enemy_red_hitbox.x:
+        right = False
+    if right == False:
+        enemy_red_hitbox.x -= 5
+        ENEMY_RED_HITBOX.x -= 5
+    if 700 >= enemy_red_hitbox.x:
+        right = True
 
 def main():
-    global run, Jump, decent, falling, platforms, initial_height, attack, attack_limit, attack_aura, among_red_enemy
+    BACKGROUND_MUSIC.play()
+    global run, Jump, decent, falling, platforms, initial_height, attack, attack_limit, attack_aura, among_red_enemy, red, right, useless, over
+    right = True
+    useless = 0
+    over = 0
     attack_aura = []
     among_red_enemy = []
     falling = True
+    red = True
     attack = False
     Jump = False
     decent = False
@@ -183,15 +226,15 @@ def main():
                         ATTACK_SOUND.play()
             if event.type == pygame.QUIT:
                 run = False
+                pygame.quit()
         if attack:
             player_attack()
         if not Jump:
             gravity()
         else:
             player_jump()
-
+        enemy_handler()
         player_movements()
         draw()
-    pygame.quit()
-
+    main()
 main()
